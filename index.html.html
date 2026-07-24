@@ -1,0 +1,725 @@
+Content is user-generated and unverified.
+
+
+1
+Learn how to customize
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haodapay — VAN Reconciliation Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1220; --panel:#141B2E; --panel2:#101728; --border:#232C43;
+    --text:#E8EDF7; --text-dim:#8792A8; --text-faint:#5B6478;
+    --blue:#5B8DEF; --blue-bg:rgba(91,141,239,0.12);
+    --amber:#F0B93A; --amber-bg:rgba(240,185,58,0.12);
+    --green:#34D399; --green-bg:rgba(52,211,153,0.12);
+    --red:#F76C6C; --red-bg:rgba(247,108,108,0.14);
+    --violet:#A78BFA; --violet-bg:rgba(167,139,250,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 600px at 10% -10%, #131c33 0%, var(--bg) 55%);
+    color:var(--text); font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh; padding:28px 28px 60px;
+  }
+  .num{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px;
+    margin-bottom:22px; padding-bottom:20px; border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; flex-direction:column; gap:6px;}
+  .wordmark{font-size:11px; letter-spacing:0.18em; font-weight:700; color:var(--text-faint); text-transform:uppercase;}
+  h1{margin:0; font-size:26px; font-weight:800; letter-spacing:-0.01em;}
+  .subtitle{color:var(--text-dim); font-size:13.5px; max-width:640px; line-height:1.5;}
+
+  .tabs{display:flex; gap:8px; margin-bottom:20px; border-bottom:1px solid var(--border); flex-wrap:wrap;}
+  .tab{
+    padding:10px 16px; font-size:13.5px; font-weight:600; color:var(--text-dim);
+    cursor:pointer; border-bottom:2px solid transparent; user-select:none;
+  }
+  .tab.active{color:var(--text); border-bottom-color:var(--blue);}
+  .tab .count{
+    display:inline-block; margin-left:6px; font-size:10.5px; background:var(--panel);
+    border:1px solid var(--border); border-radius:100px; padding:1px 7px; color:var(--text-dim);
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+
+  button{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600;
+    border-radius:8px; padding:9px 14px; cursor:pointer;
+    border:1px solid var(--border); background:var(--panel); color:var(--text);
+    transition:border-color .15s, background .15s, transform .05s;
+  }
+  button:hover{border-color:#3A4666; background:#182238;}
+  button:active{transform:translateY(1px);}
+  button.primary{background:var(--blue); border-color:var(--blue); color:#0B1220;}
+  button.primary:hover{filter:brightness(1.08); background:var(--blue);}
+  button.ghost{background:transparent;}
+  button.danger{border-color:rgba(247,108,108,0.4); color:var(--red);}
+  button.danger:hover{background:var(--red-bg); border-color:var(--red);}
+  button.small{padding:5px 9px; font-size:11.5px;}
+
+  .panel{background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:18px 20px;}
+  .section-title{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:0 0 14px; flex-wrap:wrap;}
+  .section-title h2{font-size:14.5px; margin:0; letter-spacing:0.02em;}
+  .section-title .hint{font-size:12px; color:var(--text-dim);}
+
+  input[type=text], input[type=number], select{
+    background:#0C1220; border:1px solid var(--border); border-radius:6px;
+    color:var(--text); font-family:'Inter',sans-serif; font-size:13px;
+    padding:7px 9px; outline:none; width:100%;
+  }
+  input:focus, select:focus{border-color:var(--blue);}
+  input.mono, select.mono{font-family:'JetBrains Mono',monospace;}
+
+  .table-scroll{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--panel2);}
+  table{border-collapse:collapse; width:100%; min-width:760px;}
+  thead th{
+    position:sticky; top:0; background:#0E1526; z-index:2;
+    text-align:left; font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:600; padding:11px 12px; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  tbody td{padding:9px 12px; font-size:13px; border-bottom:1px solid #1A2338; vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  td.right{text-align:right;}
+  td.mono{font-family:'JetBrains Mono',monospace;}
+  td.desc{max-width:340px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); font-size:11.5px; font-family:'JetBrains Mono',monospace;}
+  td.desc:hover{white-space:normal; overflow:visible;}
+
+  .badge{
+    display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:0.02em;
+    padding:3px 8px; border-radius:100px; text-transform:uppercase;
+  }
+  .badge.neft{background:var(--blue-bg); color:var(--blue);}
+  .badge.imps{background:var(--violet-bg); color:var(--violet);}
+  .badge.rtgs{background:var(--amber-bg); color:var(--amber);}
+  .badge.upi{background:var(--green-bg); color:var(--green);}
+  .badge.other{background:var(--panel); color:var(--text-dim); border:1px solid var(--border);}
+
+  .status{display:inline-block; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:100px;}
+  .status.matched{background:var(--green-bg); color:var(--green);}
+  .status.unassigned{background:var(--red-bg); color:var(--red);}
+  .status.ambiguous{background:var(--amber-bg); color:var(--amber);}
+  .status.manual{background:var(--blue-bg); color:var(--blue);}
+
+  .cards{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px;}
+  @media (max-width:1100px){ .cards{grid-template-columns:repeat(2,1fr);} }
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 16px 14px; position:relative; overflow:hidden;}
+  .card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px;}
+  .card.blue::before{background:var(--blue);} .card.green::before{background:var(--green);}
+  .card.red::before{background:var(--red);} .card.amber::before{background:var(--amber);}
+  .card.violet::before{background:var(--violet);}
+  .card .label{font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); font-weight:600; margin-bottom:8px;}
+  .card .value{font-family:'JetBrains Mono',monospace; font-size:21px; font-weight:700;}
+  .card.blue .value{color:var(--blue);} .card.green .value{color:var(--green);}
+  .card.red .value{color:var(--red);} .card.amber .value{color:var(--amber);}
+  .card.violet .value{color:var(--violet);}
+
+  .dropzone{
+    border:1.5px dashed var(--border); border-radius:12px; padding:28px 20px; text-align:center;
+    color:var(--text-dim); font-size:13px; margin-bottom:20px; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--blue); background:var(--blue-bg);}
+  .dropzone strong{color:var(--text);}
+  .dropzone .fmt{font-size:11.5px; color:var(--text-faint); margin-top:4px;}
+  #fileInput{display:none;}
+
+  .empty{padding:30px; text-align:center; color:var(--text-faint); font-size:13px;}
+  .van-row{cursor:pointer;}
+  .van-row td{font-weight:600;}
+  .van-detail{background:#0C1220;}
+  .van-detail td{padding:0; border-bottom:1px solid #1A2338;}
+  .van-detail-inner{padding:12px 16px 16px 40px;}
+  .chev{display:inline-block; width:14px; color:var(--text-faint); transition:transform .15s;}
+  .chev.open{transform:rotate(90deg);}
+
+  .merchant-tag{font-size:11px; color:var(--text-faint);}
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+  .warn{
+    background:var(--amber-bg); border:1px solid rgba(240,185,58,0.35); color:var(--amber);
+    border-radius:8px; padding:10px 14px; font-size:12.5px; margin-bottom:16px;
+  }
+  footer{margin-top:30px; text-align:center; color:var(--text-faint); font-size:11.5px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="wordmark">Haodapay &nbsp;·&nbsp; Internal Developer Tool</div>
+    <h1>VAN Reconciliation Simulator</h1>
+    <div class="subtitle">Upload a real bank statement (Excel). The tool detects payment mode from the narration and matches each credit entry to a merchant by searching for that merchant's Sub VAN inside the narration text — no VAN column required, no header VAN needed.</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="merchants">Merchants &amp; VANs <span class="count" id="tabCountMerchants">0</span></div>
+  <div class="tab" data-tab="upload">Upload &amp; Reconcile <span class="count" id="tabCountTxns">0</span></div>
+  <div class="tab" data-tab="ledger">VAN Ledger</div>
+</div>
+
+<!-- ===================== TAB 1: MERCHANTS & VANS ===================== -->
+<div class="view active" id="view-merchants">
+  <div class="toolbar">
+    <button class="primary" id="btnAddMerchant">+ Add merchant</button>
+    <button class="ghost" id="btnLoadSampleMerchants">Load sample merchants</button>
+    <button class="danger" id="btnClearMerchants">Clear all</button>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Merchant name</th>
+          <th>Header VAN (6-char)</th>
+          <th>Sub VAN (11-char)</th>
+          <th>Full VAN</th>
+          <th>MID</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="merchantsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== TAB 2: UPLOAD & RECONCILE ===================== -->
+<div class="view" id="view-upload">
+  <div class="dropzone" id="dropzone">
+    <div><strong>Click to upload</strong> or drag & drop a bank statement</div>
+    <div class="fmt">.xlsx / .xls — column headers auto-detected (Date, Narration/Description, Debit, Credit or Amount+Type)</div>
+  </div>
+  <input type="file" id="fileInput" accept=".xlsx,.xls">
+  <div class="toolbar">
+    <button class="ghost" id="btnLoadSampleTxns">Load sample statement</button>
+    <button class="danger" id="btnClearTxns">Clear transactions</button>
+  </div>
+  <div id="parseWarning"></div>
+
+  <div class="cards" id="uploadCards"></div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Narration</th>
+          <th>Mode</th>
+          <th class="right">Credit (₹)</th>
+          <th>Matched merchant / VAN</th>
+          <th>Status</th>
+          <th>Manual override</th>
+        </tr>
+      </thead>
+      <tbody id="txnsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== TAB 3: VAN LEDGER ===================== -->
+<div class="view" id="view-ledger">
+  <div class="section-title">
+    <h2>All VANs</h2>
+    <span class="hint">Click a row to see its reconciled transactions</span>
+  </div>
+  <div class="table-scroll" style="margin-bottom:24px;">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>VAN</th>
+          <th>Merchant</th>
+          <th class="right"># Transactions</th>
+          <th class="right">Total reconciled (₹)</th>
+        </tr>
+      </thead>
+      <tbody id="ledgerBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer>Internal tool — client-side only, nothing is uploaded to a server. Not connected to production data.</footer>
+
+<script>
+// ---------------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------------
+let state = {
+  merchants: [], // {id, name, headerVan, subVan, mid}
+  transactions: [], // {id, date, desc, credit, mode, matchedId, matchStatus, overrideId}
+  activeTab: 'merchants',
+  openVan: null,
+};
+let nextMerchantId = 1;
+let nextTxnId = 1;
+
+// ---------------------------------------------------------------------
+// HELPERS
+// ---------------------------------------------------------------------
+const fmtMoney = n => {
+  let r = Math.round((n || 0) * 100) / 100;
+  if (Object.is(r, -0)) r = 0;
+  return '₹' + r.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+};
+const fmtDate = d => {
+  if (!(d instanceof Date) || isNaN(d)) return '—';
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+};
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fullVan(m){
+  if (m.headerVan && m.subVan) return (m.headerVan + '-' + m.subVan).toUpperCase();
+  return (m.subVan || '').toUpperCase();
+}
+
+function detectMode(desc){
+  const d = (desc || '').toUpperCase();
+  if (d.includes('NEFT')) return 'NEFT';
+  if (d.includes('RTGS')) return 'RTGS';
+  if (d.includes('IMPS')) return 'IMPS';
+  if (d.includes('UPI')) return 'UPI';
+  return 'OTHER';
+}
+
+// Match a narration string against known Sub VANs (substring search).
+function matchVan(desc){
+  const upper = (desc || '').toUpperCase();
+  const hits = state.merchants.filter(m => m.subVan && m.subVan.trim() && upper.includes(m.subVan.trim().toUpperCase()));
+  if (hits.length === 1) return { status: 'matched', id: hits[0].id };
+  if (hits.length > 1) return { status: 'ambiguous', ids: hits.map(h => h.id) };
+  return { status: 'unassigned', id: null };
+}
+
+function recompute(){
+  // re-run VAN matching for every transaction against the current merchant list
+  state.transactions.forEach(t => {
+    const m = matchVan(t.desc);
+    t.matchStatus = m.status;
+    t.matchedId = m.status === 'matched' ? m.id : null;
+  });
+}
+
+function effectiveMerchantId(t){
+  if (t.overrideId) return t.overrideId;
+  if (t.matchStatus === 'matched') return t.matchedId;
+  return null;
+}
+function effectiveStatus(t){
+  if (t.overrideId) return 'manual';
+  return t.matchStatus;
+}
+
+// ---------------------------------------------------------------------
+// EXCEL PARSING
+// ---------------------------------------------------------------------
+const DATE_KEYS = ['date','txn date','transaction date','value date'];
+const DESC_KEYS = ['narration','description','particulars','remarks','details'];
+const CREDIT_KEYS = ['credit','deposit','cr amount','credit amount'];
+const DEBIT_KEYS = ['debit','withdrawal','dr amount','debit amount'];
+const AMOUNT_KEYS = ['amount'];
+const TYPE_KEYS = ['dr/cr','cr/dr','type','indicator'];
+
+function findCol(headerRow, keys){
+  for (let i=0;i<headerRow.length;i++){
+    const h = String(headerRow[i] ?? '').toLowerCase().trim();
+    if (!h) continue;
+    if (keys.some(k => h.includes(k))) return i;
+  }
+  return -1;
+}
+
+function parseAmountCell(v){
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return v;
+  const cleaned = String(v).replace(/,/g,'').replace(/[^\d.\-]/g,'').trim();
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseDateCell(v){
+  if (v instanceof Date && !isNaN(v)) return v;
+  if (typeof v === 'number'){
+    try {
+      const d = XLSX.SSF.parse_date_code(v);
+      if (d) return new Date(d.y, d.m-1, d.d);
+    } catch(e){}
+  }
+  if (typeof v === 'string'){
+    const d = new Date(v);
+    if (!isNaN(d)) return d;
+  }
+  return null;
+}
+
+function parseWorkbook(workbook){
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, defval:''});
+
+  // find header row: scan first 15 rows for one containing a date-ish AND desc-ish column
+  let headerIdx = -1, dateCol=-1, descCol=-1, creditCol=-1, debitCol=-1, amountCol=-1, typeCol=-1;
+  for (let r=0; r<Math.min(15, rows.length); r++){
+    const row = rows[r];
+    if (!row || !row.length) continue;
+    const dCol = findCol(row, DATE_KEYS);
+    const dsCol = findCol(row, DESC_KEYS);
+    if (dCol !== -1 && dsCol !== -1){
+      headerIdx = r; dateCol = dCol; descCol = dsCol;
+      creditCol = findCol(row, CREDIT_KEYS);
+      debitCol = findCol(row, DEBIT_KEYS);
+      amountCol = findCol(row, AMOUNT_KEYS);
+      typeCol = findCol(row, TYPE_KEYS);
+      break;
+    }
+  }
+
+  if (headerIdx === -1){
+    return { error: 'Could not find a header row with recognizable Date and Narration/Description columns. Check the file format.' };
+  }
+  if (creditCol === -1 && amountCol === -1){
+    return { error: 'Found Date and Narration columns, but no Credit / Deposit / Amount column. Check the file format.' };
+  }
+
+  const txns = [];
+  for (let r=headerIdx+1; r<rows.length; r++){
+    const row = rows[r];
+    if (!row || row.every(c => c === '' || c === null || c === undefined)) continue;
+
+    const date = parseDateCell(row[dateCol]);
+    const desc = String(row[descCol] ?? '');
+    let credit = 0;
+
+    if (creditCol !== -1){
+      credit = parseAmountCell(row[creditCol]);
+    } else if (amountCol !== -1 && typeCol !== -1){
+      const type = String(row[typeCol] ?? '').toUpperCase();
+      const amt = parseAmountCell(row[amountCol]);
+      if (type.includes('CR')) credit = amt;
+    } else if (amountCol !== -1){
+      // no debit/credit distinction available — assume positive amounts are credits
+      const amt = parseAmountCell(row[amountCol]);
+      if (amt > 0) credit = amt;
+    }
+
+    if (credit > 0){
+      txns.push({
+        id: nextTxnId++,
+        date, desc,
+        credit,
+        mode: detectMode(desc),
+        matchedId: null,
+        matchStatus: null,
+        overrideId: null,
+      });
+    }
+  }
+  return { txns };
+}
+
+// ---------------------------------------------------------------------
+// RENDER: MERCHANTS TAB
+// ---------------------------------------------------------------------
+function renderMerchants(){
+  const body = document.getElementById('merchantsBody');
+  if (!state.merchants.length){
+    body.innerHTML = `<tr><td colspan="6"><div class="empty">No merchants yet. Click "+ Add merchant" to register a VAN assignment.</div></td></tr>`;
+  } else {
+    body.innerHTML = state.merchants.map(m => `
+      <tr data-id="${m.id}">
+        <td><input type="text" class="mField" data-field="name" value="${escapeHtml(m.name)}" placeholder="Merchant name"></td>
+        <td><input type="text" class="mono mField" data-field="headerVan" maxlength="6" value="${escapeHtml(m.headerVan)}" placeholder="e.g. HDP982"></td>
+        <td><input type="text" class="mono mField" data-field="subVan" maxlength="11" value="${escapeHtml(m.subVan)}" placeholder="e.g. HANTW000001"></td>
+        <td class="mono">${escapeHtml(fullVan(m)) || '—'}</td>
+        <td><input type="text" class="mField" data-field="mid" value="${escapeHtml(m.mid)}" placeholder="optional"></td>
+        <td><button class="small danger btnDeleteMerchant">Remove</button></td>
+      </tr>
+    `).join('');
+  }
+  document.getElementById('tabCountMerchants').textContent = state.merchants.length;
+
+  body.querySelectorAll('.mField').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const id = parseInt(e.target.closest('tr').dataset.id);
+      const field = e.target.dataset.field;
+      const m = state.merchants.find(x => x.id === id);
+      if (m) m[field] = e.target.value;
+      if (field === 'subVan' || field === 'headerVan'){
+        recompute();
+        renderUpload();
+        renderLedger();
+        // refresh just the full-van cell without losing focus
+        const cell = e.target.closest('tr').children[3];
+        cell.textContent = fullVan(m) || '—';
+      }
+    });
+  });
+  body.querySelectorAll('.btnDeleteMerchant').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const id = parseInt(e.target.closest('tr').dataset.id);
+      state.merchants = state.merchants.filter(m => m.id !== id);
+      state.transactions.forEach(t => { if (t.overrideId === id) t.overrideId = null; });
+      recompute();
+      renderAll();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// RENDER: UPLOAD & RECONCILE TAB
+// ---------------------------------------------------------------------
+function statusBadge(t){
+  const st = effectiveStatus(t);
+  const map = {
+    matched: ['matched','Reconciled'],
+    manual: ['manual','Manual match'],
+    ambiguous: ['ambiguous','Ambiguous'],
+    unassigned: ['unassigned','Unassigned'],
+  };
+  const [cls,label] = map[st] || ['unassigned','Unassigned'];
+  return `<span class="status ${cls}">${label}</span>`;
+}
+
+function renderUpload(){
+  const body = document.getElementById('txnsBody');
+  const txns = state.transactions;
+  document.getElementById('tabCountTxns').textContent = txns.length;
+
+  // summary cards
+  const totalCredit = txns.reduce((s,t) => s + t.credit, 0);
+  const reconciled = txns.filter(t => effectiveMerchantId(t) !== null);
+  const reconciledAmt = reconciled.reduce((s,t) => s + t.credit, 0);
+  const unassigned = txns.filter(t => effectiveMerchantId(t) === null && effectiveStatus(t) !== 'ambiguous');
+  const unassignedAmt = unassigned.reduce((s,t) => s + t.credit, 0);
+  const ambiguous = txns.filter(t => effectiveStatus(t) === 'ambiguous');
+  const vansMatched = new Set(reconciled.map(t => effectiveMerchantId(t))).size;
+
+  document.getElementById('uploadCards').innerHTML = `
+    <div class="card blue"><div class="label">Total credits</div><div class="value">${fmtMoney(totalCredit)}</div></div>
+    <div class="card green"><div class="label">Reconciled</div><div class="value">${fmtMoney(reconciledAmt)}</div></div>
+    <div class="card red"><div class="label">Unassigned</div><div class="value">${fmtMoney(unassignedAmt)}</div></div>
+    <div class="card amber"><div class="label">Ambiguous matches</div><div class="value">${ambiguous.length}</div></div>
+    <div class="card violet"><div class="label">VANs matched</div><div class="value">${vansMatched}</div></div>
+  `;
+
+  if (!txns.length){
+    body.innerHTML = `<tr><td colspan="7"><div class="empty">No transactions loaded yet. Upload a bank statement or load the sample statement above.</div></td></tr>`;
+  } else {
+    body.innerHTML = txns.map(t => {
+      const effId = effectiveMerchantId(t);
+      const merchant = effId ? state.merchants.find(m => m.id === effId) : null;
+      const matchLabel = merchant
+        ? `${escapeHtml(merchant.name)} <span class="merchant-tag mono">(${escapeHtml(fullVan(merchant))})</span>`
+        : (effectiveStatus(t) === 'ambiguous'
+            ? `<span style="color:var(--amber);">Multiple merchants match — resolve manually</span>`
+            : `<span style="color:var(--text-faint);">No match</span>`);
+
+      const options = ['<option value="">— none / auto —</option>']
+        .concat(state.merchants.map(m => `<option value="${m.id}" ${t.overrideId===m.id?'selected':''}>${escapeHtml(m.name)} (${escapeHtml(fullVan(m))})</option>`));
+
+      return `
+        <tr data-id="${t.id}">
+          <td class="mono">${fmtDate(t.date)}</td>
+          <td class="desc" title="${escapeHtml(t.desc)}">${escapeHtml(t.desc)}</td>
+          <td><span class="badge ${t.mode.toLowerCase()}">${t.mode}</span></td>
+          <td class="right mono">${fmtMoney(t.credit)}</td>
+          <td>${matchLabel}</td>
+          <td>${statusBadge(t)}</td>
+          <td><select class="mono overrideSelect">${options.join('')}</select></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  body.querySelectorAll('.overrideSelect').forEach(sel => {
+    sel.addEventListener('change', e => {
+      const id = parseInt(e.target.closest('tr').dataset.id);
+      const t = state.transactions.find(x => x.id === id);
+      const val = e.target.value;
+      t.overrideId = val ? parseInt(val) : null;
+      renderUpload();
+      renderLedger();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// RENDER: VAN LEDGER TAB
+// ---------------------------------------------------------------------
+function renderLedger(){
+  const body = document.getElementById('ledgerBody');
+  const rows = [];
+
+  state.merchants.forEach(m => {
+    const txns = state.transactions.filter(t => effectiveMerchantId(t) === m.id);
+    rows.push({ key: 'm'+m.id, van: fullVan(m) || '(no VAN set)', merchantName: m.name || '(unnamed)', txns, isUnassigned:false });
+  });
+
+  const unassignedTxns = state.transactions.filter(t => effectiveMerchantId(t) === null);
+  if (unassignedTxns.length){
+    rows.push({ key: 'unassigned', van: 'UNASSIGNED', merchantName: '— no merchant match —', txns: unassignedTxns, isUnassigned:true });
+  }
+
+  if (!rows.length){
+    body.innerHTML = `<tr><td colspan="5"><div class="empty">No VANs registered yet. Add merchants in the first tab.</div></td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows.map(r => {
+    const total = r.txns.reduce((s,t) => s + t.credit, 0);
+    const isOpen = state.openVan === r.key;
+    const detailRows = r.txns.length
+      ? r.txns.map(t => `
+          <div style="display:flex; gap:14px; padding:6px 0; border-bottom:1px solid #1A2338; font-size:12.5px;">
+            <span class="mono" style="width:90px; color:var(--text-dim);">${fmtDate(t.date)}</span>
+            <span class="badge ${t.mode.toLowerCase()}" style="width:56px; text-align:center;">${t.mode}</span>
+            <span class="mono" style="width:110px; text-align:right; color:var(--green);">${fmtMoney(t.credit)}</span>
+            <span class="desc" style="white-space:normal; flex:1;">${escapeHtml(t.desc)}</span>
+          </div>
+        `).join('')
+      : `<div style="color:var(--text-faint); font-size:12.5px; padding:8px 0;">No reconciled transactions yet.</div>`;
+
+    return `
+      <tr class="van-row" data-key="${r.key}">
+        <td><span class="chev ${isOpen?'open':''}">▶</span></td>
+        <td class="mono" style="${r.isUnassigned?'color:var(--red);':''}">${escapeHtml(r.van)}</td>
+        <td>${escapeHtml(r.merchantName)}</td>
+        <td class="right mono">${r.txns.length}</td>
+        <td class="right mono" style="${r.isUnassigned?'color:var(--red);':'color:var(--green);'}">${fmtMoney(total)}</td>
+      </tr>
+      <tr class="van-detail" style="${isOpen?'':'display:none;'}" data-detailfor="${r.key}">
+        <td colspan="5"><div class="van-detail-inner">${detailRows}</div></td>
+      </tr>
+    `;
+  }).join('');
+
+  body.querySelectorAll('.van-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const key = row.dataset.key;
+      state.openVan = state.openVan === key ? null : key;
+      renderLedger();
+    });
+  });
+}
+
+function renderAll(){ renderMerchants(); renderUpload(); renderLedger(); }
+
+// ---------------------------------------------------------------------
+// TABS
+// ---------------------------------------------------------------------
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------------------------------------------------------------------
+// MERCHANT ACTIONS
+// ---------------------------------------------------------------------
+document.getElementById('btnAddMerchant').addEventListener('click', () => {
+  state.merchants.push({ id: nextMerchantId++, name:'', headerVan:'', subVan:'', mid:'' });
+  renderMerchants();
+});
+document.getElementById('btnClearMerchants').addEventListener('click', () => {
+  state.merchants = [];
+  state.transactions.forEach(t => t.overrideId = null);
+  recompute();
+  renderAll();
+});
+document.getElementById('btnLoadSampleMerchants').addEventListener('click', () => {
+  state.merchants = [
+    { id: nextMerchantId++, name:'Anantara Textiles',  headerVan:'0811OP', subVan:'HANTW000001', mid:'MID-2041' },
+    { id: nextMerchantId++, name:'Greenfield Traders',  headerVan:'0811OP', subVan:'GRNFD100022', mid:'MID-2042' },
+    { id: nextMerchantId++, name:'Bluepeak Retail',     headerVan:'0811OP', subVan:'BLPKR200033', mid:'MID-2043' },
+  ];
+  recompute();
+  renderAll();
+});
+
+// ---------------------------------------------------------------------
+// FILE UPLOAD
+// ---------------------------------------------------------------------
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function handleFile(file){
+  const warnEl = document.getElementById('parseWarning');
+  warnEl.innerHTML = '';
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const result = parseWorkbook(workbook);
+      if (result.error){
+        warnEl.innerHTML = `<div class="warn">⚠️ ${escapeHtml(result.error)}</div>`;
+        return;
+      }
+      state.transactions = state.transactions.concat(result.txns);
+      recompute();
+      renderAll();
+      if (!result.txns.length){
+        warnEl.innerHTML = `<div class="warn">⚠️ File parsed but no credit entries were found. Check that Credit/Deposit amounts are present.</div>`;
+      }
+    } catch(err){
+      warnEl.innerHTML = `<div class="warn">⚠️ Could not read this file: ${escapeHtml(err.message)}</div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('btnClearTxns').addEventListener('click', () => {
+  state.transactions = [];
+  document.getElementById('parseWarning').innerHTML = '';
+  renderAll();
+});
+
+document.getElementById('btnLoadSampleTxns').addEventListener('click', () => {
+  const rows = [
+    ['17-07-2026', 'BY TRANSFER-NEFT*DBSS0IN0811*0811OP6177682585*HANTW000001*GEER--', 10000],
+    ['19-07-2026', 'BY TRANSFER-IMPS*DBSS0IN0811*0811OP6177902200*GRNFD100022*PYMT--', 4500],
+    ['21-07-2026', 'UPI/CR/312299887766/ramesh.k@oksbi/SBIN/GRNFD100022/Payment for order', 3300],
+    ['22-07-2026', 'BY TRANSFER-UPI*DBSS0IN0811*0811OP6177902230*BLPKR200033*UPIC--', 900],
+    ['25-07-2026', 'BY TRANSFER-RTGS*DBSS0IN0811*0811OP6177902310*GRNFD100022*SETL--', 52000],
+    ['24-07-2026', 'BY TRANSFER-NEFT*DBSS0IN0811*0811OP6177902299*UNKWN900099*GEER--', 6800],
+  ];
+  const sample = rows.map(([d, desc, credit]) => ({
+    id: nextTxnId++,
+    date: (() => { const [dd,mm,yyyy] = d.split('-'); return new Date(+yyyy, +mm-1, +dd); })(),
+    desc, credit,
+    mode: detectMode(desc),
+    matchedId: null, matchStatus: null, overrideId: null,
+  }));
+  state.transactions = state.transactions.concat(sample);
+  recompute();
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
